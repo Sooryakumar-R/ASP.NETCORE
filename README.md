@@ -108,96 +108,101 @@ cd ASP.NETCORE
 ## Step 2: Install Required Packages (Already Included)
 
 ```bash
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-
-dotnet add package Microsoft.EntityFrameworkCore.Tools
+# All required packages are already included in the project file
+# If needed, restore with:
+dotnet restore
 ```
+
+**Packages Used:**
+- `Microsoft.EntityFrameworkCore.SqlServer` - SQL Server provider
+- `Microsoft.EntityFrameworkCore.Tools` - EF Core CLI tools
 
 ---
 
-## Step 3: Create Project Folders
-
-Create the following folders:
-
-```text
-Controllers
-
-Services
-
-Repositories
-
-DTOs
-
-Models
-
-Data
-
-Migrations
-```
-
----
-
-## Step 4: Create Models
+## Step 3: Data Models
 
 ### Department.cs
-
 ```csharp
-public class Department
+namespace ASP.NETCORE.Models
 {
-    public int Id { get; set; }
+    public class Department
+    {
+        public int Id { get; set; }
 
-    public string Name { get; set; }
+        public string Name { get; set; }
 
-    public string Description { get; set; }
-
-    public ICollection<Student> Students { get; set; }
-        = new List<Student>();
+        public ICollection<Student>? Students { get; set; }
+            = new List<Student>();
+    }
 }
 ```
 
 ### Student.cs
-
 ```csharp
-public class Student
+namespace ASP.NETCORE.Models
 {
-    public int Id { get; set; }
+    public class Student
+    {
+        public int Id { get; set; }
 
-    public string Name { get; set; }
+        public string Name { get; set; }
 
-    public string Email { get; set; }
+        public int Age { get; set; }
 
-    public int Age { get; set; }
+        public int DepartmentId { get; set; }                    // ← Foreign Key
 
-    public int DepartmentId { get; set; }
-
-    public Department Department { get; set; }
+        public Department? Department { get; set; }              // ← Navigation Property
+    }
 }
 ```
 
 ---
 
-## Step 5: Create DbContext
+## Step 4: Database Context Configuration
 
-Create:
-
-Data/ApplicationDbContext.cs
-
+### ApplicationDbContext.cs
 ```csharp
 using Microsoft.EntityFrameworkCore;
 
-public class ApplicationDbContext : DbContext
+namespace ASP.NETCORE.Data
 {
-    public ApplicationDbContext(
-        DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    public class ApplicationDbContext : DbContext
     {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+
+        public DbSet<Models.Student> Students { get; set; }
+        public DbSet<Models.Department> Departments { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // ✨ KEY FIX: Explicit relationship configuration
+            // Configure one-to-many relationship between Department and Student
+            modelBuilder.Entity<Models.Student>()
+                .HasOne(s => s.Department)                      // Student has one Department
+                .WithMany(d => d.Students)                      // Department has many Students
+                .HasForeignKey(s => s.DepartmentId)            // FK property
+                .OnDelete(DeleteBehavior.Cascade);              // Cascade delete
+
+            // Configure required foreign key
+            modelBuilder.Entity<Models.Student>()
+                .Property(s => s.DepartmentId)
+                .IsRequired();                                   // DepartmentId is required
+        }
     }
-
-    public DbSet<Student> Students { get; set; }
-
-    public DbSet<Department> Departments { get; set; }
 }
 ```
+
+**Key Configuration Points:**
+- ✅ `HasOne()` - Defines the one side of the relationship
+- ✅ `WithMany()` - Defines the many side of the relationship
+- ✅ `HasForeignKey()` - Specifies the foreign key property
+- ✅ `OnDelete(DeleteBehavior.Cascade)` - Enables cascade delete
+- ✅ `IsRequired()` - Makes DepartmentId mandatory
 
 ---
 
