@@ -1,4 +1,5 @@
-﻿using ASP.NETCORE.Repositories;
+﻿using ASP.NETCORE.Models;
+using ASP.NETCORE.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASP.NETCORE.Controllers
@@ -30,6 +31,13 @@ namespace ASP.NETCORE.Controllers
                 return NotFound();
 
             return Ok(student);
+        }
+
+        [HttpPost]
+        public IActionResult AddStudent(Student student)
+        {
+            _repository.Add(student);
+            return CreatedAtAction(nameof(GetById), new { id = student.Id }, student);
         }
     }
 }

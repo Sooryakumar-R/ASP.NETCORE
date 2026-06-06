@@ -10,6 +10,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ASP.NETCORE.Repositories.IStudentRepository, ASP.NETCORE.Repositories.StudentRepository>();
+builder.Services.AddScoped<ASP.NETCORE.Repositories.IDepartmentRepository, ASP.NETCORE.Repositories.DepartmentRepository>();
 builder.Services.AddDbContext<ApplicationDbContext>(
     options =>
     options.UseSqlServer(

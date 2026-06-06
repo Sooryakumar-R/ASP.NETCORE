@@ -1,4 +1,6 @@
-﻿namespace ASP.NETCORE.Repositories
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace ASP.NETCORE.Repositories
 {
     public class StudentRepository : IStudentRepository
     {
@@ -9,11 +11,11 @@
         }
         public List<Models.Student> GetAll()
         {
-            return _context.Students.ToList();
+            return _context.Students.Include(s => s.Department).ToList();
         }
         public Models.Student? GetById(int id)
         {
-            return _context.Students.Find(id);
+            return _context.Students.Include(s => s.Department).FirstOrDefault(s => s.Id == id);
         }
         public Models.Student Add(Models.Student student)
         {

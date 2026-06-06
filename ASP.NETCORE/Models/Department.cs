@@ -1,4 +1,6 @@
-﻿namespace ASP.NETCORE.Models
+﻿using System.Text.Json.Serialization;
+
+namespace ASP.NETCORE.Models
 {
     public class Department
     {
@@ -6,7 +8,8 @@
 
         public string Name { get; set; }
 
-        public ICollection<Student> Students { get; set; }
-            = new List<Student>();
+        [JsonIgnore]
+        public List<Student>? Students { get; set; }
+            = [];
     }
 }
