@@ -1,102 +1,111 @@
-# Student Management API
+# ASP.NET Core Student Management System
 
-## Overview
+## 📋 Overview
 
-Student Management API is a RESTful Web API built using ASP.NET Core, Entity Framework Core, and SQL Server.
+A modern ASP.NET Core REST API for managing students and departments with properly configured Entity Framework Core relationships and data integrity constraints. This project demonstrates enterprise-level patterns and best practices for building scalable APIs.
 
-The project demonstrates:
-
-* ASP.NET Core Web API
-* Entity Framework Core
-* SQL Server
-* Repository Pattern
-* Dependency Injection
-* One-to-Many Relationships
-* LINQ Queries
-* CRUD Operations
-* Migrations
+### Key Features
+- ✅ **One-to-Many Relationships** - Properly configured Department ↔ Student relationships
+- ✅ **Cascade Delete** - Automatic removal of students when department is deleted
+- ✅ **Eager Loading** - Optimized queries using `.Include()` to prevent N+1 problems
+- ✅ **Repository Pattern** - Clean separation of concerns with abstraction layer
+- ✅ **Dependency Injection** - Loose coupling and enhanced testability
+- ✅ **Entity Constraints** - Required foreign keys for data consistency
+- ✅ **Explicit Configuration** - Relationships configured in `OnModelCreating()`
 
 ---
 
-# Technology Stack
+# 🛠 Technology Stack
 
-* ASP.NET Core Web API
-* C#
-* Entity Framework Core
-* SQL Server
-* SQL Server Management Studio (SSMS)
-* Swagger/OpenAPI
-
----
-
-# Project Architecture
-
-StudentManagementAPI
-
-├── Controllers
-
-├── Services
-
-├── Repositories
-
-├── DTOs
-
-├── Models
-
-├── Data
-
-├── Migrations
-
-├── appsettings.json
-
-└── Program.cs
+| Component | Technology |
+|-----------|-----------|
+| Framework | ASP.NET Core |
+| Language | C# 14.0 |
+| Target | .NET 10 |
+| ORM | Entity Framework Core |
+| Database | SQL Server |
+| IDE | Visual Studio 2026 |
+| API Documentation | Swagger/OpenAPI |
+| Package Manager | NuGet |
 
 ---
 
-# Database Relationship
+# 📁 Project Architecture
 
-Department
-
-↓
-
-One Department can have Many Students
-
-↓
-
-Students
-
-Example:
-
-Department
-
-| Id | Name |
-| -- | ---- |
-| 1  | IT   |
-
-Students
-
-| Id | Name   | DepartmentId |
-| -- | ------ | ------------ |
-| 1  | Soorya | 1            |
-| 2  | Ravi   | 1            |
-
----
-
-# Step-by-Step Project Setup
-
-## Step 1: Create Project
-
-Open Terminal or Package Manager Console
-
-```bash
-dotnet new webapi -n StudentManagementAPI
+```
+ASP.NETCORE/
+├── Models/                          # Data Models
+│   ├── Student.cs                   # Student entity with Department FK
+│   └── Department.cs                # Department entity with navigation property
+├── Data/
+│   └── ApplicationDbContext.cs       # EF Core DbContext + Relationship Config
+├── Repositories/                    # Data Access Layer
+│   ├── IStudentRepository.cs        # Student interface
+│   ├── StudentRepository.cs         # Student implementation (with eager loading)
+│   ├── IDepartmentRepository.cs     # Department interface
+│   └── DepartmentRepository.cs      # Department implementation
+├── Controllers/                     # API Endpoints
+│   ├── StudentsController.cs        # Student CRUD operations
+│   └── DepartmentController.cs      # Department CRUD operations
+├── Program.cs                       # Dependency Injection & Configuration
+├── appsettings.json                 # Production settings
+├── appsettings.Development.json     # Development settings
+└── README.md                        # This file
 ```
 
-Open the project in Visual Studio.
+---
+
+# 📊 Database Relationship Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ONE-TO-MANY RELATIONSHIP                 │
+└─────────────────────────────────────────────────────────────┘
+
+Department (Parent)
+  ├── Id (PK)
+  ├── Name
+  └── Students (ICollection<Student>)
+              ↑
+              │
+              │ (1 : Many)
+              │
+              ↓
+         Student (Child)
+           ├── Id (PK)
+           ├── Name
+           ├── Age
+           └── DepartmentId (FK) ← Required constraint
+```
+
+### Example Data
+**Department Table**
+| Id | Name |
+|----|------|
+| 1  | IT   |
+| 2  | HR   |
+
+**Student Table**
+| Id | Name     | Age | DepartmentId |
+|----|----------|-----|--------------|
+| 1  | Soorya   | 25  | 1            |
+| 2  | Ravi     | 26  | 1            |
+| 3  | Priya    | 24  | 2            |
 
 ---
 
-## Step 2: Install Required Packages
+# 🔧 Step-by-Step Project Setup
+
+## Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/Sooryakumar-R/ASP.NETCORE.git
+cd ASP.NETCORE
+```
+
+---
+
+## Step 2: Install Required Packages (Already Included)
 
 ```bash
 dotnet add package Microsoft.EntityFrameworkCore.SqlServer
