@@ -1,8 +1,10 @@
-﻿using ASP.NETCORE.Models;
+﻿using ASP.NETCORE.DTOs.DepartmenDtos;
+using ASP.NETCORE.Models;
 using ASP.NETCORE.Repositories;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Linq;
 
 namespace ASP.NETCORE.Controllers
 {
@@ -16,8 +18,9 @@ namespace ASP.NETCORE.Controllers
             _departmentRepository = departmentRepository;
         }
         [HttpPost]
-        public IActionResult AddDepartment(Department department)
+        public IActionResult AddDepartment(CreateDepartmentDto departmentDto)
         {
+            Department department = new Department() { Name = departmentDto.Name };
             _departmentRepository.Add(department);
 
             return CreatedAtAction(
@@ -37,13 +40,25 @@ namespace ASP.NETCORE.Controllers
             if (department == null)
                 return NotFound();
 
-            return Ok(department);
+            var departmentDto = new DepartmentResponseDto
+            {
+                Id = department.Id,
+                Name = department.Name
+            };
+
+            return Ok(departmentDto);
         }
         [HttpGet]
         public IActionResult GetAll()
         {
             var departments = _departmentRepository.GetAll();
-            return Ok(departments);
+            var departmentDtos = departments.Select(d => new DepartmentResponseDto
+            {
+                Id = d.Id,
+                Name = d.Name
+            }).ToList();
+            
+            return Ok(departmentDtos);
         }
     }
 }

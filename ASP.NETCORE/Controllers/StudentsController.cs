@@ -1,4 +1,6 @@
-﻿using ASP.NETCORE.Models;
+﻿using ASP.NETCORE.DTOs;
+using ASP.NETCORE.DTOs.StudenetDtos;
+using ASP.NETCORE.Models;
 using ASP.NETCORE.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +21,15 @@ namespace ASP.NETCORE.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            return Ok(_repository.GetAll());
+            var students = _repository.GetAll();
+            var dtos = students.Select(s => new StudentResponseDto()
+            {
+                Id = s.Id,
+                Name = s.Name,
+                DepartmentName = s.Department?.Name ?? string.Empty
+            }).ToList();
+            
+            return Ok(dtos);
         }
 
         [HttpGet("{id}")]
@@ -29,15 +39,31 @@ namespace ASP.NETCORE.Controllers
 
             if (student == null)
                 return NotFound();
-
-            return Ok(student);
+            
+            var dto = new StudentResponseDto()
+            {
+                Id = student.Id,
+                Name = student.Name,
+                DepartmentName = student.Department?.Name ?? string.Empty
+            };
+            return Ok(dto);
         }
 
         [HttpPost]
-        public IActionResult AddStudent(Student student)
+        public IActionResult AddStudent(CreateStudentDto dto)
         {
+            var student = new Student
+            {
+                Name = dto.Name ?? string.Empty,
+                DepartmentId = dto.DepartmentId
+            };
+
             _repository.Add(student);
-            return CreatedAtAction(nameof(GetById), new { id = student.Id }, student);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = student.Id },
+                student);
         }
     }
 }

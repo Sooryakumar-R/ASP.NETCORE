@@ -25,12 +25,7 @@ namespace ASP.NETCORE.Repositories
 
         public Department GetById(int id)
         {
-           var department = _context.Departments.Find(id);
-            if (department == null)
-            {
-                throw new Exception("Department not found");
-            }
-            return department;
+            return _context.Departments.Find(id);
         }
 
     }
