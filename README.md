@@ -297,58 +297,203 @@ builder.Services.AddScoped<
 
 ---
 
-## Step 11: Create Service Layer
+## Step 11: Data Transfer Objects (DTOs)
 
-Create:
+DTOs are used to transfer data between the API and clients, keeping internal models separate from API contracts.
 
-Services
+### StudentDtos/
 
-Services/Interfaces
+- `CreateStudentDto.cs` - Used for POST requests
+- `UpdateStudentDto.cs` - Used for PUT requests  
+- `StudentResponseDto.cs` - Used for API responses
 
-Example:
+### DepartmenDtos/
 
-```csharp
-public interface IStudentService
-{
-    Task<List<Student>> GetAllAsync();
-}
-```
+- `CreateDepartmentDto.cs` - Used for POST requests
+- `DepartmentResponseDto.cs` - Used for API responses
 
-StudentService will call the Repository.
+**Benefits:**
+- ✅ Hide internal implementation details
+- ✅ Validate input data independently
+- ✅ Control what data is exposed in API responses
+- ✅ Decouple API contracts from database models
 
 ---
 
-## Step 12: Create Controller
+## Step 12: AutoMapper Configuration
 
-StudentsController.cs
+AutoMapper automatically maps between entities and DTOs, eliminating manual mapping code.
+
+### Mappings/StudentProfile.cs
+
+```csharp
+using AutoMapper;
+using ASP.NETCORE.DTOs.StudentDtos;
+using ASP.NETCORE.Models;
+
+public class StudentProfile : Profile
+{
+    public StudentProfile()
+    {
+        CreateMap<CreateStudentDto, Student>();
+        CreateMap<UpdateStudentDto, Student>();
+        CreateMap<Student, StudentResponseDto>();
+    }
+}
+```
+
+### Mappings/DepartmentProfile.cs
+
+```csharp
+using AutoMapper;
+using ASP.NETCORE.DTOs.DepartmenDtos;
+using ASP.NETCORE.Models;
+
+public class DepartmentProfile : Profile
+{
+    public DepartmentProfile()
+    {
+        CreateMap<CreateDepartmentDto, Department>();
+        CreateMap<Department, DepartmentResponseDto>();
+    }
+}
+```
+
+**Program.cs Registration:**
+
+```csharp
+builder.Services.AddAutoMapper(
+    typeof(StudentProfile), 
+    typeof(DepartmentProfile));
+```
+
+---
+
+## Step 13: Create Controllers
+
+### StudentsController.cs
 
 ```csharp
 [ApiController]
 [Route("api/[controller]")]
 public class StudentsController : ControllerBase
 {
-    private readonly IStudentService _service;
+    private readonly IStudentRepository _studentRepository;
 
-    public StudentsController(
-        IStudentService service)
+    public StudentsController(IStudentRepository studentRepository)
     {
-        _service = service;
+        _studentRepository = studentRepository;
+    }
+
+    [HttpPost]
+    public IActionResult AddStudent(CreateStudentDto studentDto)
+    {
+        Student student = new Student() 
+        { 
+            Name = studentDto.Name,
+            Age = studentDto.Age,
+            DepartmentId = studentDto.DepartmentId
+        };
+        _studentRepository.Add(student);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = student.Id },
+            student);
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetById(int id)
+    {
+        var student = _studentRepository.GetById(id);
+        if (student == null)
+            return NotFound();
+
+        var studentDto = new StudentResponseDto
+        {
+            Id = student.Id,
+            Name = student.Name,
+            Age = student.Age
+        };
+        return Ok(studentDto);
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public IActionResult GetAll()
     {
-        var students =
-            await _service.GetAllAsync();
+        var students = _studentRepository.GetAll();
+        var studentDtos = students.Select(s => new StudentResponseDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Age = s.Age
+        }).ToList();
+        return Ok(studentDtos);
+    }
+}
+```
 
-        return Ok(students);
+### DepartmentController.cs
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class DepartmentController : ControllerBase
+{
+    private readonly IDepartmentRepository _departmentRepository;
+
+    public DepartmentController(IDepartmentRepository departmentRepository)
+    {
+        _departmentRepository = departmentRepository;
+    }
+
+    [HttpPost]
+    public IActionResult AddDepartment(CreateDepartmentDto departmentDto)
+    {
+        Department department = new Department() 
+        { 
+            Name = departmentDto.Name 
+        };
+        _departmentRepository.Add(department);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = department.Id },
+            department);
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetById(int id)
+    {
+        var department = _departmentRepository.GetById(id);
+        if (department == null)
+            return NotFound();
+
+        var departmentDto = new DepartmentResponseDto
+        {
+            Id = department.Id,
+            Name = department.Name
+        };
+        return Ok(departmentDto);
+    }
+
+    [HttpGet]
+    public IActionResult GetAll()
+    {
+        var departments = _departmentRepository.GetAll();
+        var departmentDtos = departments.Select(d => new DepartmentResponseDto
+        {
+            Id = d.Id,
+            Name = d.Name
+        }).ToList();
+        return Ok(departmentDtos);
     }
 }
 ```
 
 ---
 
-## Step 13: Create Migration
+## Step 14: Create Migration
 
 Open Package Manager Console
 
@@ -364,7 +509,7 @@ dotnet ef migrations add InitialCreate
 
 ---
 
-## Step 14: Update Database
+## Step 15: Update Database
 
 ```powershell
 Update-Database
@@ -385,7 +530,7 @@ EF Core automatically creates:
 
 ---
 
-## Step 15: Run Application
+## Step 16: Run Application
 
 ```bash
 dotnet run
@@ -405,7 +550,20 @@ https://localhost:xxxx/swagger
 
 ---
 
-# API Endpoints
+# Current Implementation Status
+
+## ✅ Completed Features
+
+- ✅ **Repository Pattern** - Both Student and Department repositories implemented
+- ✅ **Dependency Injection** - All services registered and injected via constructor
+- ✅ **Entity Framework Core** - SQL Server integration with migrations
+- ✅ **One-to-Many Relationships** - Department ↔ Student relationships configured
+- ✅ **DTOs** - Separate DTOs for Create and Response operations
+- ✅ **AutoMapper** - Automatic entity-to-DTO mapping
+- ✅ **Swagger/OpenAPI** - API documentation and testing interface
+- ✅ **CRUD Operations** - Full Create, Read, Update, Delete functionality
+
+## 📋 API Endpoints
 
 ## Departments
 
@@ -435,7 +593,7 @@ DELETE /api/students/{id}
 
 ---
 
-# Entity Framework Core Concepts Covered
+# Entity Framework Core & Design Patterns Covered
 
 * DbContext
 * DbSet
@@ -443,25 +601,35 @@ DELETE /api/students/{id}
 * LINQ
 * Navigation Properties
 * Foreign Keys
-* Include()
+* Include() for Eager Loading
 * One-to-Many Relationships
 * CRUD Operations
+* **Repository Pattern** - Abstraction layer for data access
+* **Dependency Injection** - ASP.NET Core built-in DI container
+* **Data Transfer Objects (DTOs)** - Separating API contracts from domain models
+* **AutoMapper** - Object-to-object mapping
+* **Cascade Delete** - Automatic cleanup of related data
+* **Entity Constraints** - Data integrity through required fields
 
 ---
 
 # Future Enhancements
 
-* DTO Mapping
-* AutoMapper
-* JWT Authentication
-* Role-Based Authorization
 * Pagination
 * Search & Filtering
 * Global Exception Handling
 * Unit Testing (xUnit)
+* Integration Testing
+* JWT Authentication
+* Role-Based Authorization
+* Validation Attributes
+* Logging (Serilog)
+* Database Transactions
+* API Versioning
 * React Frontend
 * Angular Frontend
 * Docker Deployment
+* CI/CD Pipeline (GitHub Actions)
 
 ---
 
