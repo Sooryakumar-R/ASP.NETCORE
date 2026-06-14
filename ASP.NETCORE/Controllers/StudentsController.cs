@@ -2,6 +2,7 @@
 using ASP.NETCORE.DTOs.StudenetDtos;
 using ASP.NETCORE.Models;
 using ASP.NETCORE.Repositories;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASP.NETCORE.Controllers
@@ -11,23 +12,33 @@ namespace ASP.NETCORE.Controllers
     public class StudentsController : ControllerBase
     {
         private readonly IStudentRepository _repository;
+        private readonly IMapper  _mapper;
 
         public StudentsController(
-            IStudentRepository repository)
+            IStudentRepository repository,
+            IMapper mapper)
         {
             _repository = repository;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public IActionResult GetAll()
         {
             var students = _repository.GetAll();
+
+            //Automapper
+            var dtos = _mapper.Map<List<StudentResponseDto>>(students);
+
+            /*
+            DTO:
             var dtos = students.Select(s => new StudentResponseDto()
             {
                 Id = s.Id,
                 Name = s.Name,
                 DepartmentName = s.Department?.Name ?? string.Empty
             }).ToList();
+            */
             
             return Ok(dtos);
         }
@@ -40,23 +51,22 @@ namespace ASP.NETCORE.Controllers
             if (student == null)
                 return NotFound();
             
-            var dto = new StudentResponseDto()
+            var dto = _mapper.Map<StudentResponseDto>(student);
+           /*
+             var dto = new StudentResponseDto()
             {
                 Id = student.Id,
                 Name = student.Name,
                 DepartmentName = student.Department?.Name ?? string.Empty
             };
+            */
             return Ok(dto);
         }
 
         [HttpPost]
         public IActionResult AddStudent(CreateStudentDto dto)
         {
-            var student = new Student
-            {
-                Name = dto.Name ?? string.Empty,
-                DepartmentId = dto.DepartmentId
-            };
+            var student = _mapper.Map<Student>(dto);
 
             _repository.Add(student);
 
