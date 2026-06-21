@@ -4,6 +4,7 @@ using ASP.NETCORE.Models;
 using ASP.NETCORE.Repositories;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ASP.NETCORE.Controllers
 {
@@ -21,7 +22,7 @@ namespace ASP.NETCORE.Controllers
             _repository = repository;
             _mapper = mapper;
         }
-
+        [Authorize]
         [HttpGet]
         public IActionResult GetAll()
         {
@@ -42,7 +43,7 @@ namespace ASP.NETCORE.Controllers
             
             return Ok(dtos);
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {

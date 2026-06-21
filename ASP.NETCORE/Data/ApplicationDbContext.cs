@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ASP.NETCORE.Models;
+using Microsoft.EntityFrameworkCore;
 namespace ASP.NETCORE.Data
 {
     public class ApplicationDbContext : DbContext
@@ -9,6 +10,7 @@ namespace ASP.NETCORE.Data
         }
         public DbSet<Models.Student> Students { get; set; }
         public DbSet<Models.Department> Departments { get; set; }
+        public DbSet<AppUser> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

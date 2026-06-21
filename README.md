@@ -297,203 +297,58 @@ builder.Services.AddScoped<
 
 ---
 
-## Step 11: Data Transfer Objects (DTOs)
+## Step 11: Create Service Layer
 
-DTOs are used to transfer data between the API and clients, keeping internal models separate from API contracts.
+Create:
 
-### StudentDtos/
+Services
 
-- `CreateStudentDto.cs` - Used for POST requests
-- `UpdateStudentDto.cs` - Used for PUT requests  
-- `StudentResponseDto.cs` - Used for API responses
+Services/Interfaces
 
-### DepartmenDtos/
-
-- `CreateDepartmentDto.cs` - Used for POST requests
-- `DepartmentResponseDto.cs` - Used for API responses
-
-**Benefits:**
-- ✅ Hide internal implementation details
-- ✅ Validate input data independently
-- ✅ Control what data is exposed in API responses
-- ✅ Decouple API contracts from database models
-
----
-
-## Step 12: AutoMapper Configuration
-
-AutoMapper automatically maps between entities and DTOs, eliminating manual mapping code.
-
-### Mappings/StudentProfile.cs
+Example:
 
 ```csharp
-using AutoMapper;
-using ASP.NETCORE.DTOs.StudentDtos;
-using ASP.NETCORE.Models;
-
-public class StudentProfile : Profile
+public interface IStudentService
 {
-    public StudentProfile()
-    {
-        CreateMap<CreateStudentDto, Student>();
-        CreateMap<UpdateStudentDto, Student>();
-        CreateMap<Student, StudentResponseDto>();
-    }
+    Task<List<Student>> GetAllAsync();
 }
 ```
 
-### Mappings/DepartmentProfile.cs
-
-```csharp
-using AutoMapper;
-using ASP.NETCORE.DTOs.DepartmenDtos;
-using ASP.NETCORE.Models;
-
-public class DepartmentProfile : Profile
-{
-    public DepartmentProfile()
-    {
-        CreateMap<CreateDepartmentDto, Department>();
-        CreateMap<Department, DepartmentResponseDto>();
-    }
-}
-```
-
-**Program.cs Registration:**
-
-```csharp
-builder.Services.AddAutoMapper(
-    typeof(StudentProfile), 
-    typeof(DepartmentProfile));
-```
+StudentService will call the Repository.
 
 ---
 
-## Step 13: Create Controllers
+## Step 12: Create Controller
 
-### StudentsController.cs
+StudentsController.cs
 
 ```csharp
 [ApiController]
 [Route("api/[controller]")]
 public class StudentsController : ControllerBase
 {
-    private readonly IStudentRepository _studentRepository;
+    private readonly IStudentService _service;
 
-    public StudentsController(IStudentRepository studentRepository)
+    public StudentsController(
+        IStudentService service)
     {
-        _studentRepository = studentRepository;
-    }
-
-    [HttpPost]
-    public IActionResult AddStudent(CreateStudentDto studentDto)
-    {
-        Student student = new Student() 
-        { 
-            Name = studentDto.Name,
-            Age = studentDto.Age,
-            DepartmentId = studentDto.DepartmentId
-        };
-        _studentRepository.Add(student);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = student.Id },
-            student);
-    }
-
-    [HttpGet("{id}")]
-    public IActionResult GetById(int id)
-    {
-        var student = _studentRepository.GetById(id);
-        if (student == null)
-            return NotFound();
-
-        var studentDto = new StudentResponseDto
-        {
-            Id = student.Id,
-            Name = student.Name,
-            Age = student.Age
-        };
-        return Ok(studentDto);
+        _service = service;
     }
 
     [HttpGet]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var students = _studentRepository.GetAll();
-        var studentDtos = students.Select(s => new StudentResponseDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Age = s.Age
-        }).ToList();
-        return Ok(studentDtos);
-    }
-}
-```
+        var students =
+            await _service.GetAllAsync();
 
-### DepartmentController.cs
-
-```csharp
-[ApiController]
-[Route("api/[controller]")]
-public class DepartmentController : ControllerBase
-{
-    private readonly IDepartmentRepository _departmentRepository;
-
-    public DepartmentController(IDepartmentRepository departmentRepository)
-    {
-        _departmentRepository = departmentRepository;
-    }
-
-    [HttpPost]
-    public IActionResult AddDepartment(CreateDepartmentDto departmentDto)
-    {
-        Department department = new Department() 
-        { 
-            Name = departmentDto.Name 
-        };
-        _departmentRepository.Add(department);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = department.Id },
-            department);
-    }
-
-    [HttpGet("{id}")]
-    public IActionResult GetById(int id)
-    {
-        var department = _departmentRepository.GetById(id);
-        if (department == null)
-            return NotFound();
-
-        var departmentDto = new DepartmentResponseDto
-        {
-            Id = department.Id,
-            Name = department.Name
-        };
-        return Ok(departmentDto);
-    }
-
-    [HttpGet]
-    public IActionResult GetAll()
-    {
-        var departments = _departmentRepository.GetAll();
-        var departmentDtos = departments.Select(d => new DepartmentResponseDto
-        {
-            Id = d.Id,
-            Name = d.Name
-        }).ToList();
-        return Ok(departmentDtos);
+        return Ok(students);
     }
 }
 ```
 
 ---
 
-## Step 14: Create Migration
+## Step 13: Create Migration
 
 Open Package Manager Console
 
@@ -509,7 +364,7 @@ dotnet ef migrations add InitialCreate
 
 ---
 
-## Step 15: Update Database
+## Step 14: Update Database
 
 ```powershell
 Update-Database
@@ -530,7 +385,7 @@ EF Core automatically creates:
 
 ---
 
-## Step 16: Run Application
+## Step 15: Run Application
 
 ```bash
 dotnet run
@@ -550,20 +405,7 @@ https://localhost:xxxx/swagger
 
 ---
 
-# Current Implementation Status
-
-## ✅ Completed Features
-
-- ✅ **Repository Pattern** - Both Student and Department repositories implemented
-- ✅ **Dependency Injection** - All services registered and injected via constructor
-- ✅ **Entity Framework Core** - SQL Server integration with migrations
-- ✅ **One-to-Many Relationships** - Department ↔ Student relationships configured
-- ✅ **DTOs** - Separate DTOs for Create and Response operations
-- ✅ **AutoMapper** - Automatic entity-to-DTO mapping
-- ✅ **Swagger/OpenAPI** - API documentation and testing interface
-- ✅ **CRUD Operations** - Full Create, Read, Update, Delete functionality
-
-## 📋 API Endpoints
+# API Endpoints
 
 ## Departments
 
@@ -593,7 +435,7 @@ DELETE /api/students/{id}
 
 ---
 
-# Entity Framework Core & Design Patterns Covered
+# Entity Framework Core Concepts Covered
 
 * DbContext
 * DbSet
@@ -601,35 +443,376 @@ DELETE /api/students/{id}
 * LINQ
 * Navigation Properties
 * Foreign Keys
-* Include() for Eager Loading
+* Include()
 * One-to-Many Relationships
 * CRUD Operations
-* **Repository Pattern** - Abstraction layer for data access
-* **Dependency Injection** - ASP.NET Core built-in DI container
-* **Data Transfer Objects (DTOs)** - Separating API contracts from domain models
-* **AutoMapper** - Object-to-object mapping
-* **Cascade Delete** - Automatic cleanup of related data
-* **Entity Constraints** - Data integrity through required fields
+
+---
+
+# 🔐 Authentication & Authorization
+
+## Overview
+The project implements **JWT (JSON Web Token)** based authentication with role-based authorization to secure API endpoints.
+
+## Features
+- ✅ **User Registration** - Create new user accounts with password hashing using BCrypt
+- ✅ **User Login** - Authenticate users and issue JWT tokens
+- ✅ **JWT Token Generation** - Secure tokens with 1-hour expiration
+- ✅ **Role-Based Authorization** - Support for different user roles (e.g., Admin, User)
+- ✅ **Token Validation** - Verify issuer, audience, signature, and expiration
+- ✅ **BCrypt Password Hashing** - Secure password storage with salt
+
+## Authentication Flow
+
+```
+┌─────────────┐         ┌──────────────┐         ┌──────────────┐
+│   Client    │────────▶│  AuthController  │────────▶│  Database    │
+│             │         │                 │         │              │
+└─────────────┘         └──────────────────┘         └──────────────┘
+     │
+     │ 1. Register/Login with credentials
+     │
+     ├─▶ Register: Hash password + Store user
+     │
+     ├─▶ Login: Verify password + Generate JWT
+     │
+     ◀─ Receive JWT Token
+     │
+     │ 2. Use token in subsequent requests
+     │
+     ├─▶ API Request with Authorization header
+     │   "Authorization: Bearer {token}"
+     │
+     ◀─ Access granted with user claims
+```
+
+## JWT Token Structure
+
+```json
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name": "username",
+    "http://schemas.microsoft.com/ws/2008/06/identity/claims/role": "Admin",
+    "exp": 1735689600,
+    "iss": "StudentApi",
+    "aud": "StudentApi"
+  },
+  "signature": "HMACSHA256(...)"
+}
+```
+
+## Setup Instructions
+
+### Step 1: Configure JWT Settings
+
+**appsettings.Development.json**
+
+```json
+{
+  "Jwt": {
+    "Key": "MyVeryStrongSecretKey123456789ABCDEF",
+    "Issuer": "StudentApi",
+    "Audience": "StudentApi"
+  }
+}
+```
+
+**Important:** Use a strong, random key (minimum 32 characters) for production.
+
+### Step 2: Register Authentication in Program.cs
+
+```csharp
+// JWT Authentication Configuration
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Enable middleware
+app.UseAuthentication();
+app.UseAuthorization();
+```
+
+### Step 3: Create User Model
+
+**Models/AppUser.cs**
+
+```csharp
+namespace ASP.NETCORE.Models
+{
+    public class AppUser
+    {
+        public int Id { get; set; }
+
+        public string Username { get; set; }
+
+        public string PasswordHash { get; set; }
+
+        public string Role { get; set; } = "User";  // Default role
+    }
+}
+```
+
+### Step 4: Add Users Table to DbContext
+
+**Data/ApplicationDbContext.cs**
+
+```csharp
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Student> Students { get; set; }
+    public DbSet<Department> Departments { get; set; }
+    public DbSet<AppUser> Users { get; set; }  // ← Add this
+
+    // ... existing configuration
+}
+```
+
+### Step 5: Create Auth DTOs
+
+**DTOs/AuthDtos/RegisterDto.cs**
+
+```csharp
+namespace ASP.NETCORE.DTOs.AuthDtos
+{
+    public class RegisterDto
+    {
+        public string Username { get; set; }
+
+        public string Password { get; set; }
+
+        public string Role { get; set; } = "User";
+    }
+}
+```
+
+**DTOs/AuthDtos/LoginDto.cs**
+
+```csharp
+namespace ASP.NETCORE.DTOs.AuthDtos
+{
+    public class LoginDto
+    {
+        public string Username { get; set; }
+
+        public string Password { get; set; }
+    }
+}
+```
+
+### Step 6: AuthController Implementation
+
+**Controllers/AuthController.cs**
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
+{
+    private readonly ApplicationDbContext _context;
+    private readonly IConfiguration _configuration;
+
+    public AuthController(
+        ApplicationDbContext context,
+        IConfiguration configuration)
+    {
+        _context = context;
+        _configuration = configuration;
+    }
+
+    [HttpPost("register")]
+    public IActionResult Register(RegisterDto dto)
+    {
+        if (_context.Users.Any(x => x.Username == dto.Username))
+            return BadRequest("User already exists");
+
+        var user = new AppUser
+        {
+            Username = dto.Username,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Role = dto.Role
+        };
+
+        _context.Users.Add(user);
+        _context.SaveChanges();
+
+        return Ok("User Registered");
+    }
+
+    [HttpPost("login")]
+    public IActionResult Login(LoginDto dto)
+    {
+        var user = _context.Users.FirstOrDefault(x => x.Username == dto.Username);
+
+        if (user == null)
+            return Unauthorized();
+
+        bool validPassword = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+
+        if (!validPassword)
+            return Unauthorized();
+
+        string token = GenerateJwtToken(user);
+
+        return Ok(new { Token = token });
+    }
+
+    private string GenerateJwtToken(AppUser user)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
+
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
+```
+
+### Step 7: Secure Endpoints with Authorization
+
+Use `[Authorize]` attribute to protect routes:
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class StudentsController : ControllerBase
+{
+    // Public endpoint
+    [HttpGet]
+    public async Task<IActionResult> GetAll() { ... }
+
+    // Protected endpoint - requires authentication
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateStudentDto dto) { ... }
+
+    // Admin-only endpoint - requires Admin role
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id) { ... }
+}
+```
+
+## Authentication API Endpoints
+
+### Register User
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "username": "johndoe",
+  "password": "SecurePassword123!",
+  "role": "User"
+}
+```
+
+**Response:**
+```json
+"User Registered"
+```
+
+---
+
+### Login User
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "johndoe",
+  "password": "SecurePassword123!"
+}
+```
+
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiam9obmRvZSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlVzZXIiLCJleHAiOjE3MzU2ODk2MDB9...."
+}
+```
+
+---
+
+### Access Protected Endpoint
+```http
+GET /api/students
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## Security Best Practices
+
+- ✅ **Never commit secrets** - Use User Secrets or Azure Key Vault for production
+- ✅ **Use HTTPS** - Always transmit tokens over encrypted connections
+- ✅ **Validate tokens** - Verify issuer, audience, and signature
+- ✅ **Short expiration** - Use tokens with limited lifetime (1 hour recommended)
+- ✅ **Strong passwords** - Enforce password policies during registration
+- ✅ **BCrypt hashing** - Always hash passwords with salt before storage
+- ✅ **CORS configuration** - Restrict cross-origin requests to trusted domains
+
+## Required NuGet Packages
+
+- `System.IdentityModel.Tokens.Jwt` - JWT token creation and validation
+- `Microsoft.AspNetCore.Authentication.JwtBearer` - JWT bearer scheme implementation
+- `BCrypt.Net-Core` - Password hashing with BCrypt
+- `Microsoft.EntityFrameworkCore` - ORM for data persistence
+
+Install with:
+```bash
+dotnet add package System.IdentityModel.Tokens.Jwt
+dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
+dotnet add package BCrypt.Net-Core
+```
 
 ---
 
 # Future Enhancements
 
+* Refresh Token Implementation
+* Two-Factor Authentication (2FA)
+* OAuth2 Integration (Google, GitHub)
+* Email Verification
 * Pagination
 * Search & Filtering
 * Global Exception Handling
 * Unit Testing (xUnit)
-* Integration Testing
-* JWT Authentication
-* Role-Based Authorization
-* Validation Attributes
-* Logging (Serilog)
-* Database Transactions
-* API Versioning
 * React Frontend
 * Angular Frontend
 * Docker Deployment
-* CI/CD Pipeline (GitHub Actions)
 
 ---
 
